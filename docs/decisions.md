@@ -8,3 +8,4 @@ Record one line per decision. Date. Decision. Reason.
 - 2026-10-08. Store one Parquet file per year. 4 GB CSV becomes about 0.5 GB. Queries take seconds.
 - 2026-10-08. Read NPI and FIPS as text. They are IDs. FIPS has leading zeros.
 - 2026-10-08. PUF covers 86.5% of 2024 claims and 78.6% of cost. Rows under 11 claims are suppressed. Note this in every result.
+- 2026-10-08. Moved to 10 hours per week. Core ends Nov 29. Added interview prep track and Phase 5.

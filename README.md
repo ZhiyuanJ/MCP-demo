@@ -1,6 +1,6 @@
 # AI + Data Portfolio: Medicare Part D
 
-One project. Twelve weeks. Five hours per week.
+One project. Eight weeks. Ten hours per week.
 It shows the AI skills that big tech data roles ask for.
 
 ## Read first

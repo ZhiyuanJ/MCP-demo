@@ -1,9 +1,17 @@
-# Roadmap
+# Roadmap v2
 
-- Start: Mon Oct 12 2026
-- End: Sun Jan 3 2027
-- Budget: 5 hours per week. Two 2-hour build sessions. One hour for log and review.
-- Dataset: CMS Medicare Part D Prescribers by Provider and Drug. Three years that span 2023.
+- Start: Wed Oct 7 2026
+- Core done: Sun Nov 29 2026
+- Polish done: Sun Dec 20 2026
+- Budget: 10 hours per week. About 7.5 hours on the project. About 2.5 hours on interview prep.
+- Dataset: CMS Medicare Part D Prescribers by Provider and Drug. 2022 to 2024.
+
+## What changed from v1
+- Budget doubled. Timeline cut from 12 weeks to about 8 weeks for the core.
+- Added an interview prep track. JDs list skills. Interviews test them.
+- Added statistical tests to the agent eval.
+- Added a fairness check to anomaly detection.
+- Added a December block to deploy, demo and apply.
 
 ## Goal
 Ship one project that proves four skills:
@@ -13,87 +21,97 @@ Ship one project that proves four skills:
 4. Turn data into causal answers and automated reports.
 
 ## Phases
-| Phase | Weeks | Theme | Deliverable | JD signal |
+| Phase | Dates | Theme | Deliverable | JD signal |
 |---|---|---|---|---|
-| 1 | 1-3 | Data foundation | dbt models. Metric layer. Data dictionary. | Semantic layer. KPI standards. SQL. |
-| 2 | 4-6 | Analytics agent | MCP server. 30-question eval set. Accuracy report. | Agentic analytics. LLM evaluation. |
-| 3 | 7-9 | Labeling and risk | LLM drug classifier vs gold labels. Anomaly flags. | Ground truth. Eval metrics. Fraud and abuse. |
-| 4 | 10-12 | Causal and ship | Insulin cap DiD. Dashboard. Auto-report. Write-up. | Causal inference. Dashboards. AI automation. |
+| 1 | Oct 7 - Oct 18 | Data foundation | Parquet. dbt models. Metric layer. Data dictionary. | Semantic layer. KPI standards. SQL. |
+| 2 | Oct 19 - Nov 1 | Analytics agent | MCP server. Eval set. Significance test on gains. | Agentic analytics. LLM eval. Experimentation. |
+| 3 | Nov 2 - Nov 15 | Labeling and risk | LLM classifier vs gold labels. Anomaly flags. Fairness check. | Ground truth. Fraud and abuse. Responsible AI. |
+| 4 | Nov 16 - Nov 29 | Causal and ship | Insulin cap DiD. Dashboard. Auto-report. Write-up. | Causal inference. Dashboards. AI automation. |
+| 5 | Nov 30 - Dec 20 | Polish and apply | Live demo. Blog posts. Tailored resumes. Mock interviews. | Communication. Visibility. |
 
 ## Weekly plan
 
 ### Phase 1: Data foundation
-**W1 Oct 12. Setup and load**
-- Create Python env. Install duckdb and pandas.
-- Download three years of Part D data.
-- Load raw tables into DuckDB.
-- Done when: row counts match CMS documentation.
+**W1 Oct 7. Setup and load. DONE**
+- Python env. Three years of data. Parquet. Validation.
+- Result: PUF covers about 86% of claims and 77% of cost each year. No duplicate keys.
 
-**W2 Oct 19. dbt models**
+**W2 Oct 12. dbt models and metric layer**
 - Init dbt-duckdb project.
-- Build staging models and two marts: prescriber-year and drug-year.
-- Add five data tests.
-- Done when: `dbt build` passes.
-
-**W3 Oct 26. Metric layer**
-- Define 10 metrics in `semantic/metrics.yml`. Examples: total cost, cost per claim, generic share.
+- Staging model plus two marts: prescriber-year and drug-year.
+- Five data tests.
+- Define 10 metrics in `semantic/metrics.yml`.
 - Write `semantic/data_dictionary.md`.
-- Done when: each metric has a SQL definition and a plain-English meaning.
+- Done when: `dbt build` passes and every metric has SQL plus a plain-English meaning.
 
 ### Phase 2: Analytics agent
-**W4 Nov 2. MCP server v0**
+**W3 Oct 19. MCP server and eval set**
 - Tools: `list_metrics`, `describe_table`, `run_readonly_query`.
-- Connect it to Claude.
-- Done when: Claude answers three real questions through the tools.
+- Connect to Claude. Answer three real questions.
+- Write 40 business questions with gold answers.
+- Script scores the agent. Log baseline accuracy.
+- Done when: baseline is logged.
 
-**W5 Nov 9. Eval set**
-- Write 30 business questions with gold answers.
-- Script runs the agent and scores each answer.
-- Done when: baseline accuracy is logged.
-
-**W6 Nov 16. Improve and measure**
-- Add better metric descriptions and query guardrails.
+**W4 Oct 26. Improve and test**
+- Add metric descriptions and query guardrails.
 - Rerun the eval. Group errors by type.
-- Done when: accuracy change and error types are written up.
+- Test the gain with McNemar's test and a bootstrap confidence interval.
+- Done when: you can say if the gain is real or noise.
 
 ### Phase 3: Labeling and risk
-**W7 Nov 23. Guideline and gold set**
-- Pick 150 drug names.
-- Write labeling rules for therapeutic class.
-- Label all 150 by hand.
-- Done when: guideline v1 and gold set exist.
-
-**W8 Nov 30. LLM classifier**
-- LLM labels the same 150 drugs.
-- Measure precision, recall and Cohen's kappa.
+**W5 Nov 2. Guideline, gold set and LLM classifier**
+- Pick 200 drug names. Write labeling rules for therapeutic class.
+- Label all 200 by hand.
+- LLM labels the same 200. Measure precision, recall and Cohen's kappa.
 - Review disagreements. Update the guideline.
 - Done when: error analysis is written.
 
-**W9 Dec 7. Anomaly detection**
-- Flag outlier opioid prescribers with z-scores or isolation forest.
+**W6 Nov 9. Anomaly detection and fairness**
+- Flag outlier opioid prescribers with z-scores and isolation forest.
 - LLM drafts a review note per flag.
-- Review 20 flags by hand.
-- Done when: flag precision is estimated.
+- Review 30 flags by hand. Estimate precision.
+- Check flag rates by specialty and by rural vs urban.
+- Done when: precision and fairness findings are written.
 
 ### Phase 4: Causal and ship
-**W10 Dec 14. Causal study**
+**W7 Nov 16. Causal study**
 - The $35 insulin cap in Part D began Jan 2023.
 - Compare insulin with other diabetes drugs before and after.
-- Run difference-in-differences. Check parallel trends.
+- Run difference-in-differences. Check parallel trends with the Geography file for more pre years.
 - Done when: estimate and caveats are written.
 
-**W11 Dec 21. Dashboard and auto-report**
-- Build a dashboard in Streamlit or Power BI.
-- LLM writes a summary from metric outputs.
-- Log manual time vs automated time.
-- Done when: one command generates the report.
+**W8 Nov 23. Dashboard, auto-report and README**
+- Dashboard in Streamlit.
+- LLM writes a summary from metric outputs. Log manual vs automated time.
+- Finish README with results from every phase.
+- Thanksgiving week. Keep it light if needed.
+- Done when: one command makes the report and the README tells the full story.
 
-**W12 Dec 28. Ship**
-- Finish README with results.
-- Draft three resume bullets.
-- Write one blog post.
-- Push to GitHub.
-- Done when: repo is public and on the resume.
+### Phase 5: Polish and apply
+**W9 Nov 30. Deploy and demo**
+- Deploy the dashboard to Streamlit Community Cloud.
+- Record a 3-minute demo video of the agent.
+- Done when: a recruiter can see results without running code.
+
+**W10 Dec 7. Write and share**
+- Two blog posts: agent eval and insulin cap.
+- Draft resume bullets for each phase.
+- Done when: both posts are live.
+
+**W11 Dec 14. Interview sprint**
+- Two mock interviews. One product case. One technical.
+- Tailor resumes for five target roles.
+- Done when: five applications are out.
+
+## Interview prep track
+About 2.5 hours every week from W2.
+| Weeks | Focus | Practice |
+|---|---|---|
+| W2-W3 | SQL | Window functions. CTEs. Self joins. Two problems per session. |
+| W4-W5 | Experiments | A/B test design. Power. P-values. Common pitfalls. |
+| W6-W7 | Product sense | Define metrics. Diagnose a metric drop. Trade-offs. |
+| W8-W9 | Stats and ML basics | Regression. Bias and variance. Precision and recall. |
+| W10-W11 | Behavioral | Five STAR stories. Map each to a JD theme. |
 
 ## Rules
 - Each week ends with a log in `logs/`.
