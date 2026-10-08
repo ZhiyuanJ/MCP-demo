@@ -8,3 +8,4 @@ dbt/target/
 dbt/logs/
 .DS_Store
 .tmp/
+logs/dbt.log
