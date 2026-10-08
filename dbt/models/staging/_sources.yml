@@ -1,0 +1,6 @@
+sources:
+  - name: cms
+    tables: 
+     - name: prescriber_drug
+       meta:
+         external_location: "../data/processed/prescriber_drug/*.parquet"
