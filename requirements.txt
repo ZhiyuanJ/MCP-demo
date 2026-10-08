@@ -1,0 +1,9 @@
+certifi
+duckdb
+pandas
+dbt-duckdb
+mcp
+anthropic
+scikit-learn
+statsmodels
+streamlit
