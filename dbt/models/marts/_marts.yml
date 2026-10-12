@@ -1,0 +1,178 @@
+models:
+  - name: fct_prescriber_year
+    description: >
+      One row per prescriber (NPI) per year. Aggregated from stg_cms__prescriber_drug
+      (one row per prescriber, product and year). Source is the CMS Medicare Part D
+      Prescribers by Provider and Drug PUF, which drops prescriber-drug rows with fewer
+      than 11 claims, so every total here is a lower bound of the prescriber's true
+      Part D volume. Beneficiary counts are excluded because they are not additive
+      across drugs (one patient can fill several drugs).
+    columns:
+      - name: year
+        description: Calendar year of the Part D claims (2022-2024).
+      - name: npi
+        description: National Provider Identifier of the prescriber. Together with year, the primary key of this table.
+      - name: city
+        description: Prescriber city as reported by CMS for this year. Verified to have one value per npi and year.
+      - name: state
+        description: Prescriber state abbreviation as reported by CMS for this year. Verified to have one value per npi and year.
+      - name: provider_type
+        description: Prescriber specialty as reported by CMS for this year. Verified to have one value per npi and year.
+      - name: provider_type_source
+        description: >
+          Source of provider_type. 'S' = Medicare specialty code reported on claims,
+          'T' = taxonomy code from NPPES.
+      - name: generic_n
+        description: >
+          Number of distinct generic names (active ingredients) this prescriber had a
+          row for in this year. Always less than or equal to drug_n.
+      - name: drug_n
+        description: >
+          Number of distinct brand_name + generic_name products this prescriber had a
+          row for in this year. Equals the number of source rows, because the staging
+          table is unique on year, npi, brand_name and generic_name. Products with
+          fewer than 11 claims are not counted.
+      - name: total_claim_n
+        description: >
+          Total Part D claims (original prescriptions plus refills) across all of the
+          prescriber's products in this year. Excludes products with fewer than 11 claims.
+      - name: total_30days_fill_n
+        description: >
+          Total standardized 30-day fills. CMS converts longer fills into 30-day
+          equivalents (a 90-day fill counts as 3), so the value can be fractional.
+          Stored as floating point; sums may differ in the last decimals depending on
+          aggregation order.
+      - name: total_supply_n
+        description: Total days of supply dispensed across all claims.
+      - name: total_cost
+        description: >
+          Total gross drug cost in USD across all claims: ingredient cost, dispensing
+          fee, sales tax and vaccine administration fees, paid by the plan, the
+          beneficiary and other payers. Before manufacturer rebates, so it overstates
+          net cost. Stored as floating point.
+      - name: ge65_total_claim_n
+        description: >
+          Claims for beneficiaries aged 65 and older. Rows where the GE65 values are
+          suppressed are NULL and skipped by the sum, so this is a partial total
+          whenever ever_ge65_claim_suppressed is true. Across 2022-2024 about 45% of
+          source rows (about a third of all claims) have suppressed GE65 values. NULL (unknown, not zero) when
+          every row was suppressed.
+      - name: ever_ge65_claim_suppressed
+        description: >
+          True if at least one of the prescriber's product rows had its GE65 values
+          suppressed. When true, all ge65_* columns in this row are understated. When
+          false, the ge65_* columns are complete for the rows in the PUF, but still
+          miss products with fewer than 11 claims.
+      - name: record_ge65_claim_suppressed_n
+        description: >
+          Number of the prescriber's product rows with suppressed GE65 values. Compare
+          with drug_n to see how much of the prescriber's volume the ge65_* columns miss.
+          CMS suppresses a GE65 value when it is 1-10 claims ('*'), or when the under-65
+          value is 1-10 and the GE65 value would reveal it ('#').
+      - name: ge65_total_30days_fill_n
+        description: Standardized 30-day fills for beneficiaries aged 65+. Same suppression caveats as ge65_total_claim_n.
+      - name: ge65_total_supply_n
+        description: Days of supply for beneficiaries aged 65+. Same suppression caveats as ge65_total_claim_n.
+      - name: ge65_total_cost
+        description: Gross drug cost in USD for beneficiaries aged 65+. Same suppression caveats as ge65_total_claim_n.
+
+  - name: fct_drug_year
+    description: >
+      One row per product (brand_name + generic_name) per year. Aggregated from
+      stg_cms__prescriber_drug. The PUF drops prescriber-drug rows with fewer than 11
+      claims, so totals for rarely prescribed drugs are strongly undercounted; common
+      drugs are close to complete. Beneficiary counts are excluded because one patient
+      can fill the same drug through several prescribers.
+      Ratio columns are pre-computed for one product. To combine several products,
+      re-aggregate the totals (sum(total_cost) / sum(total_claim_n)); never average the
+      ratio columns.
+    columns:
+      - name: year
+        description: Calendar year of the Part D claims (2022-2024).
+      - name: brand_name
+        description: >
+          Brand name of the drug as reported by CMS. For generic products CMS usually
+          repeats the generic name here. Together with generic_name and year, the
+          primary key of this table.
+      - name: generic_name
+        description: Generic name (active ingredient) of the drug as reported by CMS.
+      - name: npi_n
+        description: >
+          Number of prescribers (NPIs) with at least 11 claims for this product in this
+          year. Equals the number of source rows, because the staging table is unique
+          on year, npi, brand_name and generic_name.
+      - name: provider_type_n
+        description: Number of distinct prescriber specialties (provider_type) that prescribed this product.
+      - name: total_claim_n
+        description: Total Part D claims (original prescriptions plus refills) for this product.
+      - name: total_supply_n
+        description: Total days of supply dispensed for this product.
+      - name: total_cost
+        description: >
+          Total gross drug cost in USD for this product, before manufacturer rebates.
+          Stored as floating point.
+      - name: total_30days_fill_n
+        description: Total standardized 30-day fills for this product. Can be fractional.
+      - name: ge65_total_claim_n
+        description: >
+          Claims for beneficiaries aged 65+. Suppressed rows are NULL and skipped by the
+          sum, so this is a partial total whenever ever_ge65_claim_suppressed is true.
+          NULL when every row was suppressed.
+      - name: ever_ge65_claim_suppressed
+        description: True if at least one prescriber row for this product had its GE65 values suppressed.
+      - name: record_ge65_claim_suppressed_n
+        description: Number of prescriber rows for this product with suppressed GE65 values.
+      - name: ge65_total_30days_fill_n
+        description: Standardized 30-day fills for beneficiaries aged 65+. Same suppression caveats as ge65_total_claim_n.
+      - name: ge65_total_supply_n
+        description: Days of supply for beneficiaries aged 65+. Same suppression caveats as ge65_total_claim_n.
+      - name: ge65_total_cost
+        description: Gross drug cost in USD for beneficiaries aged 65+. Same suppression caveats as ge65_total_claim_n.
+      - name: claim_per_npi
+        description: >
+          Average claims per prescriber. total_claim_n / npi_n. Only prescribers with
+          at least 11 claims are counted, so this is higher than the average over all
+          prescribers of the product. Same applies to the other *_per_npi columns.
+      - name: supply_per_npi
+        description: Average days of supply per prescriber. total_supply_n / npi_n.
+      - name: cost_per_npi
+        description: Average gross cost in USD per prescriber. total_cost / npi_n.
+      - name: fill_30day_per_npi
+        description: Average standardized 30-day fills per prescriber. total_30days_fill_n / npi_n.
+      - name: share_npi_ge65_suppressed
+        description: >
+          Share (0-1) of prescriber rows for this product with suppressed GE65 values.
+          record_ge65_claim_suppressed_n / npi_n. Use it to judge how reliable the
+          ge65_* columns are for this product.
+      - name: supply_per_claim
+        description: Average days of supply per claim. total_supply_n / total_claim_n.
+      - name: cost_per_claim
+        description: Average gross cost in USD per claim. total_cost / total_claim_n.
+      - name: cost_per_supply
+        description: Average gross cost in USD per day of supply. total_cost / total_supply_n.
+      - name: fill_30day_per_claim
+        description: >
+          Standardized 30-day fills per claim. total_30days_fill_n / total_claim_n.
+          Values above 1 mean longer fills (for example 90-day supplies) are common.
+      - name: share_claim_ge65
+        description: >
+          Share (0-1) of claims for beneficiaries aged 65+. ge65_total_claim_n divided by
+          total claims on the rows where GE65 values are not suppressed, so numerator and
+          denominator cover the same rows. NULL when every row was suppressed.
+          Suppressed rows are not random: '#' rows have almost all claims from 65+
+          patients and '*' rows have very few, so the estimate can drift for products
+          with high share_npi_ge65_suppressed. Nationally it falls inside the bounds
+          implied by the suppression rules (about 0.81 vs 0.77-0.85 in 2022).
+      - name: ge65_supply_per_claim
+        description: >
+          Average days of supply per GE65 claim. ge65_total_supply_n / ge65_total_claim_n.
+          Numerator and denominator cover the same rows, because CMS suppresses all GE65
+          columns of a row together (verified on 2022-2024 data). Computed only on
+          non-suppressed rows, so it describes those prescribers, not all 65+ claims.
+          NULL when GE65 claims are 0 or all suppressed.
+      - name: ge65_cost_per_claim
+        description: Average gross cost in USD per GE65 claim. ge65_total_cost / ge65_total_claim_n. Same notes as ge65_supply_per_claim.
+      - name: ge65_fill_30day_per_claim
+        description: Standardized 30-day fills per GE65 claim. ge65_total_30days_fill_n / ge65_total_claim_n. Same notes as ge65_supply_per_claim.
+      - name: ge65_cost_per_supply
+        description: Average gross cost in USD per GE65 day of supply. ge65_total_cost / ge65_total_supply_n. Same notes as ge65_supply_per_claim.
