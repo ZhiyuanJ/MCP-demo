@@ -14,9 +14,9 @@ SELECT
     Tot_Drug_Cst as total_cost, 
     Tot_Benes IS NULL AS is_total_benes_suppressed, --Binary suppress indicator
     CASE WHEN GE65_Sprsn_Flag IS NULL THEN 'not_suppress' 
-        WHEN GE65_Sprsn_Flag = '*' THEN 'suppress_65+_small_cell'
+        WHEN GE65_Sprsn_Flag = '*' THEN 'suppress_ge65_small_cell'
         WHEN GE65_Sprsn_Flag = '#' THEN 'suppress_below_65_small_cell'
-    END AS f_ge65_suppress,
+    END AS why_ge65_claim_suppress,
     GE65_Tot_Clms AS ge65_total_claim_n,
     GE65_Tot_30day_Fills as ge65_total_30days_fill_n,
     GE65_Tot_Day_Suply as ge65_total_supply_n,
@@ -24,6 +24,6 @@ SELECT
     CASE WHEN GE65_Bene_Sprsn_Flag IS NULL THEN 'not_suppress' 
         WHEN GE65_Bene_Sprsn_Flag = '*' THEN 'suppress_65+_small_cell'
         WHEN GE65_Bene_Sprsn_Flag = '#' THEN 'suppress_below_65_small_cell' 
-    END AS f_ge65_bene_suppress,
+    END AS why_ge65_bene_suppress,
     GE65_Tot_Benes AS ge65_total_benes
 FROM {{source('cms', 'prescriber_drug')}}
