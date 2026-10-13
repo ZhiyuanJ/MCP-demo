@@ -30,7 +30,7 @@ SELECT
     GE65_Tot_Benes AS ge65_total_bene,
     GE65_Tot_Benes IS NULL AS is_ge65_total_bene_suppressed,
     CASE WHEN GE65_Bene_Sprsn_Flag IS NULL THEN 'not_suppressed' 
-        WHEN GE65_Bene_Sprsn_Flag = '*' THEN 'suppressed_65+_small_cell'
+        WHEN GE65_Bene_Sprsn_Flag = '*' THEN 'suppressed_ge65_small_cell'
         WHEN GE65_Bene_Sprsn_Flag = '#' THEN 'suppressed_below_65_small_cell' 
         ELSE 'Other'
     END AS why_ge65_bene_suppressed

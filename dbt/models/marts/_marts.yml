@@ -10,8 +10,12 @@ models:
     columns:
       - name: year
         description: Calendar year of the Part D claims (2022-2024).
+        data_tests:
+          - not_null
       - name: npi
         description: National Provider Identifier of the prescriber. Together with year, the primary key of this table.
+        data_tests:
+          - not_null
       - name: city
         description: Prescriber city as reported by CMS for this year. Verified to have one value per npi and year.
       - name: state
@@ -89,13 +93,19 @@ models:
     columns:
       - name: year
         description: Calendar year of the Part D claims (2022-2024).
+        data_tests:
+          - not_null
       - name: brand_name
         description: >
           Brand name of the drug as reported by CMS. For generic products CMS usually
           repeats the generic name here. Together with generic_name and year, the
           primary key of this table.
+        data_tests:
+          - not_null
       - name: generic_name
         description: Generic name (active ingredient) of the drug as reported by CMS.
+        data_tests:
+          - not_null
       - name: npi_n
         description: >
           Number of prescribers (NPIs) with at least 11 claims for this product in this

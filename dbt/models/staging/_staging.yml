@@ -1,0 +1,101 @@
+models:
+  - name: stg_cms__prescriber_drug
+    description: >
+      One row per prescriber (NPI), product (brand_name + generic_name) and year.
+      Light cleanup of the CMS Medicare Part D Prescribers by Provider and Drug PUF:
+      snake_case names, provider names dropped, suppression flags turned into
+      readable labels. No aggregation and no imputation.
+      CMS drops prescriber-drug rows with fewer than 11 claims, and replaces
+      beneficiary counts of 1-10 (and some GE65 values) with NULL for privacy.
+      Keep in mind that any aggregation over this table is biased by the suppression.
+    columns:
+      - name: year
+        description: Calendar year of the Part D claims (2022-2024).
+      - name: npi
+        description: >
+          National Provider Identifier of the prescriber. Together with year,
+          brand_name and generic_name, the primary key of this table.
+      - name: city
+        description: Prescriber city as reported by CMS for this year. Verified to have one value per npi and year.
+      - name: state
+        description: Prescriber state abbreviation as reported by CMS for this year. Verified to have one value per npi and year.
+      - name: provider_type
+        description: Prescriber specialty as reported by CMS for this year. Verified to have one value per npi and year.
+      - name: provider_type_source
+        description: >
+          Source of provider_type. 'S' = Medicare specialty code reported on claims,
+          'T' = taxonomy code from NPPES.
+      - name: brand_name
+        description: >
+          Brand name (trademarked name) of the drug filled. For generic products CMS
+          usually repeats the generic name here.
+      - name: generic_name
+        description: >
+          Generic name of the drug: the chemical ingredient rather than the
+          trademarked brand name under which the drug is sold.
+      - name: total_claim_n
+        description: >
+          Number of Part D claims (original prescriptions plus refills) for this
+          prescriber and product. Always 11 or more, because CMS drops rows below 11.
+      - name: total_30days_fill_n
+        description: >
+          Number of standardized 30-day fills. CMS converts longer fills into 30-day
+          equivalents (a 90-day fill counts as 3), so the value can be fractional.
+      - name: total_supply_n
+        description: Total days of supply dispensed across all claims.
+      - name: total_cost
+        description: >
+          Gross drug cost in USD across all claims: ingredient cost, dispensing fee,
+          sales tax and vaccine administration fees, paid by the plan, the beneficiary
+          and other payers. Before manufacturer rebates, so it overstates net cost.
+      - name: total_bene_n
+        description: >
+          Number of distinct Medicare beneficiaries who filled this product from this
+          prescriber. NULL when the count is 1-10 (suppressed). Not additive across
+          products or prescribers, because one patient can fill several drugs.
+      - name: is_total_bene_suppressed
+        description: True if total_bene_n is NULL because CMS suppressed it (count of 1-10).
+      - name: ge65_total_claim_n
+        description: >
+          Claims for beneficiaries aged 65 and older. NULL when suppressed; see
+          why_ge65_claim_suppressed for the reason.
+      - name: is_ge65_claim_suppressed
+        description: >
+          True if ge65_total_claim_n is NULL because CMS suppressed it. CMS suppresses
+          all GE65 claim, fill, supply and cost columns of a row together.
+      - name: why_ge65_claim_suppressed
+        description: >
+          Reason the GE65 claim values are suppressed, from GE65_Sprsn_Flag.
+          'not_suppressed' = values present.
+          'suppressed_ge65_small_cell' ('*') = GE65 claims are 1-10.
+          'suppressed_below_65_small_cell' ('#') = under-65 claims are 1-10, so GE65
+          is hidden to protect them; GE65 is close to total_claim_n.
+          'Other' = an unexpected flag value; should never appear.
+        data_tests: 
+          - accepted_values:
+              arguments: 
+                values: ['not_suppressed','suppressed_ge65_small_cell', 'suppressed_below_65_small_cell']
+      - name: ge65_total_30days_fill_n
+        description: Standardized 30-day fills for beneficiaries aged 65+. NULL when suppressed.
+      - name: ge65_total_supply_n
+        description: Days of supply for beneficiaries aged 65+. NULL when suppressed.
+      - name: ge65_total_cost
+        description: Gross drug cost in USD for beneficiaries aged 65+. NULL when suppressed.
+      - name: ge65_total_bene
+        description: >
+          Number of distinct beneficiaries aged 65+. NULL when suppressed; see
+          why_ge65_bene_suppressed. Not additive across products or prescribers.
+      - name: is_ge65_total_bene_suppressed
+        description: True if ge65_total_bene is NULL because CMS suppressed it.
+      - name: why_ge65_bene_suppressed
+        description: >
+          Reason the GE65 beneficiary count is suppressed, from GE65_Bene_Sprsn_Flag.
+          'not_suppressed' = value present.
+          'suppressed_ge65_small_cell' ('*') = GE65 beneficiaries are 1-10.
+          'suppressed_below_65_small_cell' ('#') = under-65 beneficiaries are 1-10,
+          so GE65 is hidden to protect them.
+          'Other' = an unexpected flag value; should never appear.
+        data_tests: 
+          - accepted_values:
+              arguments: 
+                values: ['not_suppressed','suppressed_ge65_small_cell', 'suppressed_below_65_small_cell']
